@@ -1,5 +1,5 @@
 {
-  "display_name": "Input Feedback",
+  "display_name": "인풋 피드백 커스텀",
   "loading_order": 9,
   "requires": [],
   "optional": [],
@@ -7,5 +7,5 @@
   "css": "style.css",
   "author": "Felix Li",
   "version": "0.1.0",
-  "homePage": "https://github.com/liyb-gz/SillyTavern-InputFeedback"
+  "homePage": "https://github.com/countingstars35/st-if"
 }
