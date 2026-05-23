@@ -1,0 +1,104 @@
+/* ── 피드백 인라인 박스 ─────────────────────────────── */
+.input-feedback.inline-drawer {
+  background: var(--SmartThemeBlurTintColor, var(--greyCAIbg));
+  color: var(--SmartThemeBodyTextColor);
+  margin-bottom: 5px;
+  border-radius: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--SmartThemeBorderColor);
+  transition: all 250ms;
+}
+
+.input-feedback.inline-drawer .inline-drawer-header {
+  color: var(--SmartThemeBodyTextColor, var(--SmartThemeEmColor));
+}
+
+.input-feedback.inline-drawer .inline-drawer-content {
+  color: var(--SmartThemeBodyTextColor);
+  background: transparent;
+}
+
+.input-feedback.inline-drawer p,
+.input-feedback.inline-drawer span,
+.input-feedback.inline-drawer div {
+  color: var(--SmartThemeBodyTextColor);
+}
+
+.input-feedback.inline-drawer .input-feedback-delete-button {
+  color: var(--SmartThemeBodyTextColor) !important;
+  opacity: 0.5;
+}
+
+.input-feedback.inline-drawer .input-feedback-delete-button:hover {
+  opacity: 1;
+}
+
+.input-feedback.inline-drawer .inline-drawer-icon {
+  color: var(--SmartThemeBodyTextColor) !important;
+}
+
+.input-feedback-extension-settings .inline-drawer .inline-drawer-content {
+  padding-bottom: 1em;
+}
+
+.input-feedback-setting-title,
+.input-feedback-button-container {
+  padding-top: 0.5em;
+}
+
+/* ── 퀵버튼 ─────────────────────────────────────────── */
+#input-feedback-quick-btn {
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* ON: 음각 — 눌러둔 느낌 */
+#input-feedback-quick-btn.active {
+  color: var(--SmartThemeQuoteColor, #c48ea0);
+  opacity: 1;
+  background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.08));
+  box-shadow:
+    inset 2px 2px 4px rgba(0,0,0,0.4),
+    inset -1px -1px 2px rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,0,0,0.3);
+}
+
+/* OFF: 양각 — 안 눌린 느낌 */
+#input-feedback-quick-btn.inactive {
+  color: var(--SmartThemeBodyTextColor, #aaa);
+  opacity: 0.5;
+  background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.05));
+  box-shadow:
+    2px 2px 5px rgba(0,0,0,0.35),
+    -1px -1px 3px rgba(255,255,255,0.12);
+  border: 1px solid var(--SmartThemeBorderColor, #666);
+}
+
+#input-feedback-quick-btn:hover {
+  opacity: 0.85;
+}
+
+/* fallback: fixed 방식 */
+#input-feedback-quick-btn.input-feedback-fixed-fallback {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  z-index: 9999;
+  font-size: 15px;
+}
+
+#input-feedback-quick-btn.input-feedback-fixed-fallback.fixed-right {
+  left: auto;
+  right: 16px;
+}
