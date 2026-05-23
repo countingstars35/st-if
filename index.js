@@ -579,7 +579,7 @@ function addFeedbackButton(messageId) {
 
 jQuery(async () => {
   const settingsHtml = await $.get(`${extensionFolderPath}/setting.html`);
-  $("#extensions_settings2").append(settingsHtml);
+  $("#extensions_settings").append(settingsHtml);
 
   $("#input-feedback-enabled").on("input", onEnabledInput);
   $("#input-feedback-auto-new").on("input", onAutoNewInput);
