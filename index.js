@@ -16,7 +16,7 @@ import {
 
 import { applyLocale } from "../../../../scripts/i18n.js";
 
-const extensionName = "SillyTavern-InputFeedback";
+const extensionName = "st-if";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const extensionSettings = extension_settings[extensionName];
 
