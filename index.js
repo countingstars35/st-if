@@ -20,18 +20,17 @@ const extensionName = "st-if";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const extensionSettings = extension_settings[extensionName];
 
-const PROVIDERS = {
-  st:          { label: "현재 ST 연결 그대로 사용" },
-  openai:      { label: "OpenAI",              source: "openai" },
-  claude:      { label: "Claude (Anthropic)",  source: "claude" },
-  google:      { label: "Google Gemini",       source: "makersuite" },
-  vertexai:    { label: "Google Vertex AI",    source: "vertexai" },
-  deepseek:    { label: "DeepSeek",            source: "deepseek" },
-  openrouter:  { label: "OpenRouter",          source: "openrouter" },
-  cohere:      { label: "Cohere",              source: "cohere" },
-  groq:        { label: "Groq",                source: "groq" },
-  mistralai:   { label: "MistralAI",           source: "mistralai" },
-  xai:         { label: "xAI (Grok)",          source: "xai" },
+const SOURCE_MAP = {
+  openai:     "openai",
+  claude:     "claude",
+  google:     "makersuite",
+  vertexai:   "vertexai",
+  deepseek:   "deepseek",
+  openrouter: "openrouter",
+  cohere:     "cohere",
+  groq:       "groq",
+  mistralai:  "mistralai",
+  xai:        "xai",
 };
 
 const GEMINI_MODELS = [
@@ -107,7 +106,7 @@ function createQuickButton() {
   $(`#${QUICK_BTN_ID}`).remove();
 
   const side = extension_settings[extensionName].quickButtonSide || "left";
-  const $btn = $(`<div id="${QUICK_BTN_ID}" title="인풋 피드백 커스텀 ON/OFF" class="fa-solid fa-spell-check interactable"></div>`);
+  const $btn = $(`<div id="${QUICK_BTN_ID}" title="인풋 피드백 ON/OFF" class="fa-solid fa-spell-check interactable"></div>`);
 
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
@@ -142,10 +141,10 @@ function toggleEnabled() {
   if (!newEnabled) {
     $(".mes_feedback").remove();
     $(".input-feedback.content").remove();
-    toastr.info("인풋 피드백 커스텀 OFF");
+    toastr.info("인풋 피드백 OFF");
   } else {
     handleChatChanged();
-    toastr.success("인풋 피드백 커스텀 ON");
+    toastr.success("인풋 피드백 ON");
   }
   updateQuickButtonState();
 }
@@ -164,10 +163,7 @@ function updateQuickButtonState() {
   const enabled = extension_settings[extensionName].enabled;
   const $btn = $(`#${QUICK_BTN_ID}`);
   $btn.toggleClass("active", enabled).toggleClass("inactive", !enabled);
-  $btn.attr("title", enabled
-    ? "인풋 피드백 커스텀 ON — 클릭하면 끄기"
-    : "인풋 피드백 커스텀 OFF — 클릭하면 켜기"
-  );
+  $btn.attr("title", enabled ? "인풋 피드백 ON — 클릭하면 끄기" : "인풋 피드백 OFF — 클릭하면 켜기");
 }
 
 // ── Settings ──────────────────────────────────────────
@@ -202,19 +198,19 @@ async function loadSettings() {
 // ── ST 내장 API 라우팅 ────────────────────────────────
 
 async function callViaSTProxy(prompt, provider, model) {
-  const source = PROVIDERS[provider]?.source;
-  if (!source) throw new Error("알 수 없는 공급자: " + provider);
+  const chat_completion_source = SOURCE_MAP[provider];
+  if (!chat_completion_source) throw new Error("알 수 없는 공급자: " + provider);
 
-  const response = await fetch("/api/backends/chat-completions", {
+  const response = await fetch("/api/backends/chat-completions/generate", {
     method: "POST",
     headers: getRequestHeaders(),
     body: JSON.stringify({
-      messages: [{ role: "user", content: prompt }],
+      chat_completion_source,
       model: model,
+      messages: [{ role: "user", content: prompt }],
       max_tokens: 1000,
       temperature: 0.3,
       stream: false,
-      source: source,
     }),
   });
 
@@ -572,7 +568,7 @@ function displayFeedback(messageId) {
 function addFeedbackButton(messageId) {
   const extraButtons = $(`.mes[mesid=${messageId}] .mes_block .extraMesButtons`);
   if (extraButtons.find(".mes_feedback").length) return;
-  extraButtons.append(`<div title="Request Feedback" class="mes_feedback fa-solid fa-spell-check"></div>`);
+  extraButtons.append(`<div title="피드백 요청" class="mes_feedback fa-solid fa-spell-check"></div>`);
 }
 
 // ── 초기화 ────────────────────────────────────────────
