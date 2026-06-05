@@ -201,22 +201,34 @@ async function callViaSTProxy(prompt, provider, model) {
   const chat_completion_source = SOURCE_MAP[provider];
   if (!chat_completion_source) throw new Error("알 수 없는 공급자: " + provider);
 
+  const parameters = {
+    model: model,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.3,
+    max_tokens: 1000,
+    stream: false,
+    chat_completion_source: chat_completion_source,
+  };
+
+  if (provider === "vertexai") {
+    parameters.vertexai_auth_mode = "full";
+  }
+
   const response = await fetch("/api/backends/chat-completions/generate", {
     method: "POST",
-    headers: getRequestHeaders(),
-    body: JSON.stringify({
-      chat_completion_source,
-      model: model,
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 1000,
-      temperature: 0.3,
-      stream: false,
-    }),
+    headers: { ...getRequestHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify(parameters),
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API 오류 (${response.status}): ${err}`);
+    let errorMessage = `${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData?.error?.message || errorData?.message || response.statusText || errorMessage;
+    } catch (e) {
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(`API 오류 (${errorMessage})`);
   }
 
   const data = await response.json();
@@ -455,7 +467,7 @@ function updateProviderUI(provider, model, customModel, useCustomModel) {
   $("#input-feedback-custom-model").val(customModel || "");
 }
 
-// ── 파일 다운로드 & 추출 ─────────────────────────────
+// ── 파일 다운로드 유틸 ────────────────────────────────
 
 function downloadTxt(content, filename) {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -470,6 +482,8 @@ function downloadTxt(content, filename) {
 function safeName(str) {
   return str.replace(/[\\/:*?"<>|]/g, "_").slice(0, 50);
 }
+
+// ── 피드백만 추출 ─────────────────────────────────────
 
 function buildFeedbackOnlyText(chatLabel, messages) {
   const lines = ["=== 피드백 추출 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), ""];
@@ -486,6 +500,8 @@ function buildFeedbackOnlyText(chatLabel, messages) {
   lines.push("=== 총 " + count + "개 피드백 ===");
   return { text: lines.join("\n"), count };
 }
+
+// ── 채팅 + 피드백 추출 ───────────────────────────────
 
 function buildChatWithFeedbackText(chatLabel, messages) {
   const lines = ["=== 채팅 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
@@ -505,6 +521,50 @@ function buildChatWithFeedbackText(chatLabel, messages) {
   return { text: lines.join("\n"), feedbackCount };
 }
 
+// ── 채팅 + 번역 + 피드백 추출 ────────────────────────
+
+function buildChatWithTranslationAndFeedback(chatLabel, messages) {
+  const lines = ["=== 채팅 + 번역 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
+  let feedbackCount = 0;
+
+  messages.forEach(message => {
+    if (!message.name) return;
+
+    const isUser = message.is_user;
+    const role = isUser ? "👤 " + message.name : "🤖 " + message.name;
+    const original = message.extra?.original_text_for_translation || null;
+    const translation = message.extra?.display_text || null;
+    const feedback = isUser && message.extra?.inputFeedback ? message.extra.inputFeedback.feedback : null;
+
+    lines.push(`[${role}]`);
+
+    // 번역이 있으면 원문/번역 분리, 없으면 원문만
+    if (translation) {
+      lines.push("[원문] " + (original || message.mes));
+      lines.push("[번역] " + translation);
+    } else {
+      lines.push(message.mes);
+    }
+
+    // 유저 메시지에 피드백이 있으면 추가
+    if (feedback) {
+      feedbackCount++;
+      lines.push("");
+      lines.push("  📝 피드백:");
+      feedback.split("\n").forEach(fl => lines.push("  " + fl));
+    }
+
+    lines.push("");
+    lines.push("────────────────────────────────────────");
+    lines.push("");
+  });
+
+  lines.push(`=== 총 ${messages.length}개 메시지 / 피드백 ${feedbackCount}개 ===`);
+  return { text: lines.join("\n"), feedbackCount };
+}
+
+// ── 추출 버튼 핸들러 ─────────────────────────────────
+
 function onExportClick() {
   if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
   const chatId = getCurrentChatId();
@@ -520,6 +580,14 @@ function onExportChatClick() {
   const result = buildChatWithFeedbackText(chatId, getContext().chat);
   downloadTxt(result.text, "채팅+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
   toastr.success("채팅 + 피드백 " + result.feedbackCount + "개 저장 완료!");
+}
+
+function onExportAllClick() {
+  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
+  const chatId = getCurrentChatId();
+  const result = buildChatWithTranslationAndFeedback(chatId, getContext().chat);
+  downloadTxt(result.text, "채팅+번역+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+  toastr.success("채팅 + 번역 + 피드백 " + result.feedbackCount + "개 저장 완료!");
 }
 
 // ── UI 헬퍼 ──────────────────────────────────────────
@@ -592,6 +660,7 @@ jQuery(async () => {
   $("#input-feedback-purge").on("click", onPurgeClick);
   $("#input-feedback-export").on("click", onExportClick);
   $("#input-feedback-export-chat").on("click", onExportChatClick);
+  $("#input-feedback-export-all").on("click", onExportAllClick);
 
   loadSettings();
 
