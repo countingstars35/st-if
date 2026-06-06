@@ -523,6 +523,35 @@ function buildChatWithFeedbackText(chatLabel, messages) {
 
 // ── 채팅 + 번역 + 피드백 추출 ────────────────────────
 
+// <details> 단위로 원문+번역 쌍 추출
+// 결과: "원문\n번역" 형태로 문단별 매칭
+function extractPairedText(displayText) {
+  if (!displayText) return null;
+
+  // <details>...</details> 단위로 분리
+  const detailsBlocks = [...displayText.matchAll(/<details[\s\S]*?<\/details>/g)];
+
+  if (detailsBlocks.length > 0) {
+    const pairs = detailsBlocks.map(block => {
+      const html = block[0];
+      const origMatch = html.match(/class="original_text[^"]*"[^>]*>([\s\S]*?)<\/span>/);
+      const transMatch = html.match(/class="translated_text"[^>]*>([\s\S]*?)<\/span>/);
+      const orig = origMatch ? origMatch[1].trim() : "";
+      const trans = transMatch ? transMatch[1].trim() : "";
+      if (orig && trans) return orig + "\n" + trans;
+      if (trans) return trans;
+      if (orig) return orig;
+      return null;
+    }).filter(Boolean);
+
+    if (pairs.length > 0) return pairs.join("\n\n");
+  }
+
+  // <details> 없이 텍스트만 있는 경우 — 태그 제거
+  const stripped = displayText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  return stripped || null;
+}
+
 function buildChatWithTranslationAndFeedback(chatLabel, messages) {
   const lines = ["=== 채팅 + 번역 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
   let feedbackCount = 0;
@@ -532,21 +561,21 @@ function buildChatWithTranslationAndFeedback(chatLabel, messages) {
 
     const isUser = message.is_user;
     const role = isUser ? "👤 " + message.name : "🤖 " + message.name;
-    const original = message.extra?.original_text_for_translation || null;
-    const translation = message.extra?.display_text || null;
+    const displayText = message.extra?.display_text || null;
+    const paired = extractPairedText(displayText);
     const feedback = isUser && message.extra?.inputFeedback ? message.extra.inputFeedback.feedback : null;
 
     lines.push(`[${role}]`);
 
-    // 번역이 있으면 원문/번역 분리, 없으면 원문만
-    if (translation) {
-      lines.push("[원문] " + (original || message.mes));
-      lines.push("[번역] " + translation);
+    if (paired) {
+      // 번역 있으면 원문+번역 쌍으로
+      lines.push(paired);
     } else {
+      // 번역 없으면 원문만
       lines.push(message.mes);
     }
 
-    // 유저 메시지에 피드백이 있으면 추가
+    // 유저 메시지에 피드백 추가
     if (feedback) {
       feedbackCount++;
       lines.push("");
