@@ -60,7 +60,7 @@
   flex-shrink: 0;
 }
 
-/* ON: 음각 — 눌러둔 느낌 */
+/* ON:  — 눌러둔 느낌 */
 #input-feedback-quick-btn.active {
   color: var(--SmartThemeQuoteColor, #c48ea0);
   opacity: 1;
@@ -71,7 +71,7 @@
   border: 1px solid rgba(0,0,0,0.3);
 }
 
-/* OFF: 양각 — 안 눌린 느낌 */
+/* OFF:  — 안 눌린 느낌 */
 #input-feedback-quick-btn.inactive {
   color: var(--SmartThemeBodyTextColor, #aaa);
   opacity: 0.5;
