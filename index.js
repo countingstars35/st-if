@@ -324,7 +324,6 @@ function onEnabledInput(event) {
   saveSettingsDebounced();
   if (!extension_settings[extensionName].enabled) {
     $(".mes_feedback").remove();
-    $(".input-feedback.content").remove();
   } else {
     handleChatChanged();
   }
