@@ -140,7 +140,6 @@ function toggleEnabled() {
 
   if (!newEnabled) {
     $(".mes_feedback").remove();
-    $(".input-feedback.content").remove();
     toastr.info("인풋 피드백 OFF");
   } else {
     handleChatChanged();
