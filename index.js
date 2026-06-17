@@ -308,10 +308,9 @@ function handleUserMessageRendered(messageId) {
 }
 
 function handleChatChanged() {
-  if (!extensionSettings.enabled) return;
   getContext().chat.forEach((message, messageId) => {
     if (message.is_user) {
-      addFeedbackButton(messageId);
+      if (extensionSettings.enabled) addFeedbackButton(messageId);
       if (message.extra?.inputFeedback) displayFeedback(messageId);
     }
   });
