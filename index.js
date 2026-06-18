@@ -126,6 +126,7 @@ function createQuickButton() {
       setTimeout(() => tryInsert(attemptsLeft - 1), 300);
       return;
     }
+    // 삽입 대상을 찾지 못했을 때 백업 고정 배치
     $btn.addClass("input-feedback-fixed-fallback");
     if (side === "right") $btn.addClass("fixed-right");
     $("body").append($btn);
@@ -134,15 +135,6 @@ function createQuickButton() {
   }
 
   tryInsert(10); // 0.3초 간격, 최대 3초까지 DOM 준비를 기다림
-}
-
-  if (!inserted) {
-    $btn.addClass("input-feedback-fixed-fallback");
-    if (side === "right") $btn.addClass("fixed-right");
-    $("body").append($btn);
-  }
-
-  $btn.on("click", toggleEnabled);
 }
 
 function toggleEnabled() {
@@ -533,12 +525,9 @@ function buildChatWithFeedbackText(chatLabel, messages) {
 
 // ── 채팅 + 번역 + 피드백 추출 ────────────────────────
 
-// <details> 단위로 원문+번역 쌍 추출
-// 결과: "원문\n번역" 형태로 문단별 매칭
 function extractPairedText(displayText) {
   if (!displayText) return null;
 
-  // <details>...</details> 단위로 분리
   const detailsBlocks = [...displayText.matchAll(/<details[\s\S]*?<\/details>/g)];
 
   if (detailsBlocks.length > 0) {
@@ -557,7 +546,6 @@ function extractPairedText(displayText) {
     if (pairs.length > 0) return pairs.join("\n\n");
   }
 
-  // <details> 없이 텍스트만 있는 경우 — 태그 제거
   const stripped = displayText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
   return stripped || null;
 }
@@ -578,14 +566,11 @@ function buildChatWithTranslationAndFeedback(chatLabel, messages) {
     lines.push(`[${role}]`);
 
     if (paired) {
-      // 번역 있으면 원문+번역 쌍으로
       lines.push(paired);
     } else {
-      // 번역 없으면 원문만
       lines.push(message.mes);
     }
 
-    // 유저 메시지에 피드백 추가
     if (feedback) {
       feedbackCount++;
       lines.push("");
@@ -611,22 +596,6 @@ function onExportClick() {
   if (!result) { toastr.info("이 채팅에 저장된 피드백이 없습니다."); return; }
   downloadTxt(result.text, "피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
   toastr.success(result.count + "개 피드백 저장 완료!");
-}
-
-function onExportChatClick() {
-  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
-  const chatId = getCurrentChatId();
-  const result = buildChatWithFeedbackText(chatId, getContext().chat);
-  downloadTxt(result.text, "채팅+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
-  toastr.success("채팅 + 피드백 " + result.feedbackCount + "개 저장 완료!");
-}
-
-function onExportAllClick() {
-  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
-  const chatId = getCurrentChatId();
-  const result = buildChatWithTranslationAndFeedback(chatId, getContext().chat);
-  downloadTxt(result.text, "채팅+번역+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
-  toastr.success("채팅 + 번역 + 피드백 " + result.feedbackCount + "개 저장 완료!");
 }
 
 // ── UI 헬퍼 ──────────────────────────────────────────
@@ -698,8 +667,6 @@ jQuery(async () => {
   $("#input-feedback-custom-model").on("input", onCustomModelInput);
   $("#input-feedback-purge").on("click", onPurgeClick);
   $("#input-feedback-export").on("click", onExportClick);
-  $("#input-feedback-export-chat").on("click", onExportChatClick);
-  $("#input-feedback-export-all").on("click", onExportAllClick);
 
   loadSettings();
 
