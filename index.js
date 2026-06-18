@@ -103,21 +103,11 @@ Current Message:
 const QUICK_BTN_ID = "input-feedback-quick-btn";
 
 function createQuickButton() {
-function createQuickButton() {
   $(`#${QUICK_BTN_ID}`).remove();
 
   const side = extension_settings[extensionName].quickButtonSide || "left";
-  
-  // 실리태번 표준 퀵버튼 클래스(menu_button, wide_menu_button)를 추가하여 테마 CSS가 인식하도록 만듭니다.
-  const $btn = $(`
-    <div id="${QUICK_BTN_ID}" 
-         title="인풋 피드백 ON/OFF" 
-         class="menu_button wide_menu_button fa-solid fa-spell-check interactable" 
-         style="display: flex; align-items: center; justify-content: center;">
-    </div>
-  `);
+  const $btn = $(`<div id="${QUICK_BTN_ID}" title="인풋 피드백 ON/OFF" class="fa-solid fa-spell-check interactable"></div>`);
 
-  // 순정 실리태번 및 커스텀 테마들이 퀵버튼을 모아두는 실제 컨테이너를 타겟팅합니다.
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
   const targets = side === "right" ? rightTargets : leftTargets;
@@ -126,8 +116,7 @@ function createQuickButton() {
     for (const sel of targets) {
       const $t = $(sel);
       if ($t.length) {
-        // 테마의 정렬 규칙을 깨지 않기 위해 기본 삽입 방식을 고수하되 클래스로 스타일을 입힙니다.
-        side === "right" ? $t.append($btn) : $t.prepend($btn);
+        side === "right" ? $t.prepend($btn) : $t.append($btn);
         $btn.on("click", toggleEnabled);
         updateQuickButtonState();
         return;
@@ -145,10 +134,6 @@ function createQuickButton() {
   }
 
   tryInsert(10);
-}
-
-
-  tryInsert(10); // 0.3초 간격, 최대 3초까지 DOM 준비를 기다림
 }
 
 function toggleEnabled() {
