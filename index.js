@@ -717,3 +717,4 @@ jQuery(async () => {
     deleteMessage(Number($(this).closest(".mes").attr("mesid")));
   });
 });
+eventSource.on(event_types.CHAT_CHANGED, updateQuickButton);
