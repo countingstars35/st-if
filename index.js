@@ -112,16 +112,29 @@ function createQuickButton() {
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
   const targets = side === "right" ? rightTargets : leftTargets;
 
-  let inserted = false;
-  for (const sel of targets) {
-    const $t = $(sel);
-    if ($t.length) {
-      if (side === "right") $t.prepend($btn);
-      else $t.append($btn);
-      inserted = true;
-      break;
+  function tryInsert(attemptsLeft) {
+    for (const sel of targets) {
+      const $t = $(sel);
+      if ($t.length) {
+        side === "right" ? $t.prepend($btn) : $t.append($btn);
+        $btn.on("click", toggleEnabled);
+        updateQuickButtonState();
+        return;
+      }
     }
+    if (attemptsLeft > 0) {
+      setTimeout(() => tryInsert(attemptsLeft - 1), 300);
+      return;
+    }
+    $btn.addClass("input-feedback-fixed-fallback");
+    if (side === "right") $btn.addClass("fixed-right");
+    $("body").append($btn);
+    $btn.on("click", toggleEnabled);
+    updateQuickButtonState();
   }
+
+  tryInsert(10); // 0.3초 간격, 최대 3초까지 DOM 준비를 기다림
+}
 
   if (!inserted) {
     $btn.addClass("input-feedback-fixed-fallback");
