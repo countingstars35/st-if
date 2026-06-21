@@ -307,9 +307,15 @@ function handleMessageEdited(messageId) {
 
 function handleUserMessageRendered(messageId) {
   if (!extensionSettings.enabled) return;
+  
+  // 렌더링된 메시지가 유저(나)의 메시지인지 엄격하게 검사합니다.
+  const message = getMessage(messageId);
+  if (!message || !message.is_user) return;
+
   addFeedbackButton(messageId);
   if (extensionSettings.autoNew) getFeedback(messageId);
 }
+
 
 function handleChatChanged() {
   getContext().chat.forEach((message, messageId) => {
