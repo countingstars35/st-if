@@ -106,7 +106,9 @@ function createQuickButton() {
   $(`#${QUICK_BTN_ID}`).remove();
 
   const side = extension_settings[extensionName].quickButtonSide || "left";
-  const $btn = $(`<div id="${QUICK_BTN_ID}" title="인풋 피드백 ON/OFF" class="fa-solid fa-spell-check interactable"></div>`);
+  // 실리태번 코어 버튼 클래스만 부여하고 인라인 스타일을 배제하여 테마와 연동되게 합니다.
+  const $btn = $(`<div id="${QUICK_BTN_ID}" class="menu_button interactable"></div>`);
+  // ... 생략 ...
 
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
