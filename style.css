@@ -46,44 +46,35 @@
   padding-top: 0.5em;
 }
 
-/* ── 퀵버튼 ─────────────────────────────────────────── */
+/* ── 퀵버튼 (실리태번 테마 내장 스타일 전적으로 상속) ─────────────────────────── */
 #input-feedback-quick-btn {
-  cursor: pointer;
-  font-size: 1.1rem;
-  width: 30px;
-  height: 30px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  transition: all 0.15s ease;
+  font-size: 0.9em;
+  font-weight: bold;
+  font-family: sans-serif;
+  cursor: pointer;
+  
+  /* 전송 폼 안의 다른 버튼들과 높이/여백을 나란히 일치시킵니다 */
+  height: 35px;
+  min-width: 35px;
+  margin: 0 3px;
+  padding: 0 5px;
+  box-sizing: border-box;
   flex-shrink: 0;
 }
 
-/* ON:  — 눌러둔 느낌 */
+/* ON (활성화) 상태: 테마의 강조색(QuoteColor)을 글자색으로 적용 */
 #input-feedback-quick-btn.active {
-  color: var(--SmartThemeQuoteColor, #c48ea0);
+  color: var(--SmartThemeQuoteColor, #c48ea0) !important;
   opacity: 1;
-  background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.08));
-  box-shadow:
-    inset 2px 2px 4px rgba(0,0,0,0.4),
-    inset -1px -1px 2px rgba(255,255,255,0.05);
-  border: 1px solid rgba(0,0,0,0.3);
 }
 
-/* OFF:  — 안 눌린 느낌 */
+/* OFF (비활성화) 상태: 일반 글자색에 투명도를 주어 비활성화 느낌 전달 */
 #input-feedback-quick-btn.inactive {
-  color: var(--SmartThemeBodyTextColor, #aaa);
-  opacity: 0.5;
-  background: var(--SmartThemeBlurTintColor, rgba(255,255,255,0.05));
-  box-shadow:
-    2px 2px 5px rgba(0,0,0,0.35),
-    -1px -1px 3px rgba(255,255,255,0.12);
-  border: 1px solid var(--SmartThemeBorderColor, #666);
-}
-
-#input-feedback-quick-btn:hover {
-  opacity: 0.85;
+  color: var(--SmartThemeBodyTextColor, #aaa) !important;
+  opacity: 0.4;
 }
 
 /* fallback: fixed 방식 */
