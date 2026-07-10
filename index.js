@@ -198,7 +198,22 @@ async function loadSettings() {
   $("#input-feedback-provider").val(s.provider || "st");
   updateProviderUI(s.provider || "st", s.model, s.customModel, s.useCustomModel);
   updateQuickButton();
-}
+// 확장 메뉴에 피드백 뷰어 버튼 추가
+if (!$('#st-feedback-viewer-menu-btn').length) {
+  const $menu = $('#extensionsMenu');
+  if ($menu.length) {
+    $menu.append(`
+      <div id="st-feedback-viewer-menu-btn" class="list-group-item interactable" onclick="(function(){
+        if(typeof createFeedbackViewer === 'function') createFeedbackViewer();
+      })()">
+        <div class="list-group-item-action">
+          <i class="fa-solid fa-spell-check"></i>
+        </div>
+        <div class="list-group-item-label">피드백 모아보기</div>
+      </div>
+    `);
+  }
+}}
 
 // ── ST 내장 API 라우팅 ────────────────────────────────
 
