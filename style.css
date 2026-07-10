@@ -92,4 +92,34 @@
 #input-feedback-quick-btn.input-feedback-fixed-fallback.fixed-right {
   left: auto;
   right: 16px;
-} 
+}
+
+/* ── 피드백 뷰어 ─────────────────────────────────────── */
+#st-feedback-viewer {
+  font-family: var(--mainFontFamily, sans-serif);
+}
+
+#st-feedback-viewer-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#st-feedback-viewer-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#st-feedback-viewer-body::-webkit-scrollbar-thumb {
+  background: var(--SmartThemeBorderColor, #555);
+  border-radius: 3px;
+}
+
+#st-feedback-viewer-body::-webkit-scrollbar-thumb:hover {
+  background: var(--SmartThemeQuoteColor, #888);
+}
+
+#st-feedback-viewer-export:hover {
+  opacity: 0.85;
+}
+
+#st-feedback-viewer-close:hover {
+  opacity: 0.7;
+}
