@@ -93,6 +93,7 @@
   left: auto;
   right: 16px;
 }
+
 /* ── 피드백 뷰어 ─────────────────────────────────────── */
 #st-feedback-viewer {
   font-family: var(--mainFontFamily, sans-serif);
