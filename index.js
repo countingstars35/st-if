@@ -692,3 +692,120 @@ jQuery(async () => {
   });
 });
 eventSource.on(event_types.CHAT_CHANGED, updateQuickButton);
+// ── 피드백 뷰어 ──────────────────────────────────────
+
+function createFeedbackViewer() {
+  if ($('#st-feedback-viewer').length) {
+    $('#st-feedback-viewer').show();
+    return;
+  }
+
+  const html = `
+    <div id="st-feedback-viewer" style="
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:85vw; max-width:700px; height:75vh;
+      background:var(--SmartThemeBodyColor,#1a1a1a);
+      border:1px solid var(--SmartThemeBorderColor,#555);
+      border-radius:10px; z-index:99999;
+      display:flex; flex-direction:column;
+      box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    ">
+      <div style="
+        display:flex; justify-content:space-between; align-items:center;
+        padding:12px 16px; border-bottom:1px solid var(--SmartThemeBorderColor,#555);
+        flex-shrink:0;
+      ">
+        <span style="font-weight:bold;color:var(--SmartThemeBodyTextColor,#eee);font-size:14px;">
+          📋 피드백 모아보기
+        </span>
+        <button id="st-feedback-viewer-close" style="
+          background:none;border:none;
+          color:var(--SmartThemeBodyTextColor,#eee);
+          font-size:20px;cursor:pointer;
+        ">✕</button>
+      </div>
+      <div id="st-feedback-viewer-body" style="
+        flex:1; overflow-y:auto; padding:16px;
+        color:var(--SmartThemeBodyTextColor,#eee);
+        font-size:13px; line-height:1.7;
+      ">
+        <div id="st-feedback-viewer-content"></div>
+      </div>
+      <div style="
+        display:flex; gap:8px; padding:12px 16px;
+        border-top:1px solid var(--SmartThemeBorderColor,#555);
+        flex-shrink:0;
+      ">
+        <button id="st-feedback-viewer-export" style="
+          flex:1; padding:8px; border:none; border-radius:6px;
+          background:var(--SmartThemeQuoteColor,#555);
+          color:#fff; cursor:pointer; font-size:13px;
+        ">💾 txt로 저장</button>
+      </div>
+    </div>
+  `;
+
+  $('body').append(html);
+
+  $('#st-feedback-viewer-close').on('click', () => {
+    $('#st-feedback-viewer').remove();
+  });
+
+  $('#st-feedback-viewer-export').on('click', () => {
+    const chatId = getCurrentChatId();
+    if (!chatId) { toastr.info("No chat selected."); return; }
+    const result = buildFeedbackOnlyText(chatId, getContext().chat);
+    if (!result) { toastr.info("피드백이 없습니다."); return; }
+    downloadTxt(result.text, "피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+    toastr.success(result.count + "개 피드백 저장 완료!");
+  });
+
+  loadFeedbackViewerContent();
+}
+
+function loadFeedbackViewerContent() {
+  const $content = $('#st-feedback-viewer-content');
+  const chatId = getCurrentChatId();
+
+  if (!chatId) {
+    $content.html('<div style="opacity:0.6;text-align:center;padding:40px;">채팅방을 먼저 열어주세요.</div>');
+    return;
+  }
+
+  const messages = getContext().chat;
+  let count = 0;
+  let html = '';
+
+  messages.forEach((message, messageId) => {
+    if (!message.is_user || !message.extra?.inputFeedback) return;
+    count++;
+
+    const msg = message.extra.inputFeedback.message || message.mes;
+    const feedback = message.extra.inputFeedback.feedback;
+
+    html += `
+      <div style="
+        margin-bottom:20px; padding:14px;
+        background:var(--SmartThemeBlurTintColor,rgba(255,255,255,0.05));
+        border-radius:8px; border-left:3px solid var(--SmartThemeQuoteColor,#888);
+      ">
+        <div style="font-size:11px;opacity:0.5;margin-bottom:6px;">#${count} · 메시지 ${messageId}</div>
+        <div style="margin-bottom:8px;">
+          <span style="opacity:0.6;font-size:11px;">✏️ 내 메시지</span><br>
+          <span style="opacity:0.9;">${msg}</span>
+        </div>
+        <div>
+          <span style="opacity:0.6;font-size:11px;">💬 피드백</span><br>
+          <span style="opacity:0.85;white-space:pre-wrap;">${feedback}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  if (count === 0) {
+    $content.html('<div style="opacity:0.6;text-align:center;padding:40px;">이 채팅에 저장된 피드백이 없습니다.</div>');
+  } else {
+    $content.html(`<div style="opacity:0.5;font-size:12px;margin-bottom:16px;">총 ${count}개 피드백</div>` + html);
+  }
+}
