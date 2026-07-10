@@ -1,4 +1,4 @@
-Import {
+import {
   extension_settings,
   getContext,
 } from "../../../extensions.js";
@@ -108,7 +108,6 @@ function createQuickButton() {
   const side = extension_settings[extensionName].quickButtonSide || "left";
   // 실리태번 코어 버튼 클래스만 부여하고 인라인 스타일을 배제하여 테마와 연동되게 합니다.
   const $btn = $(`<div id="${QUICK_BTN_ID}" class="menu_button interactable"></div>`);
-  // ... 생략 ...
 
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
@@ -168,6 +167,13 @@ function updateQuickButtonState() {
   const enabled = extension_settings[extensionName].enabled;
   const $btn = $(`#${QUICK_BTN_ID}`);
   $btn.toggleClass("active", enabled).toggleClass("inactive", !enabled);
+  
+  if (enabled) {
+    $btn.text("AB"); // ON 상태일 때
+  } else {
+    $btn.text("A̶B̶"); // OFF 상태일 때 (취소선 형태)
+  }
+  
   $btn.attr("title", enabled ? "인풋 피드백 ON — 클릭하면 끄기" : "인풋 피드백 OFF — 클릭하면 켜기");
 }
 
@@ -310,14 +316,12 @@ function handleMessageEdited(messageId) {
 function handleUserMessageRendered(messageId) {
   if (!extensionSettings.enabled) return;
   
-  // 렌더링된 메시지가 유저(나)의 메시지인지 엄격하게 검사합니다.
   const message = getMessage(messageId);
   if (!message || !message.is_user) return;
 
   addFeedbackButton(messageId);
   if (extensionSettings.autoNew) getFeedback(messageId);
 }
-
 
 function handleChatChanged() {
   getContext().chat.forEach((message, messageId) => {
@@ -393,6 +397,7 @@ function onProviderChange() {
   updateProviderUI(provider, DEFAULT_MODELS[provider] || "", "", false);
 }
 
+// 중복 정의 오류를 예방하기 위해 선언적 함수로 올바르게 복구
 function onModelSelectChange() {
   extension_settings[extensionName].model = $(this).val();
   extension_settings[extensionName].useCustomModel = false;
@@ -510,101 +515,6 @@ function buildFeedbackOnlyText(chatLabel, messages) {
   return { text: lines.join("\n"), count };
 }
 
-// ── 채팅 + 피드백 추출 ───────────────────────────────
-
-function buildChatWithFeedbackText(chatLabel, messages) {
-  const lines = ["=== 채팅 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
-  let feedbackCount = 0;
-  messages.forEach(message => {
-    if (!message.name) return;
-    lines.push(`[${message.is_user ? "👤" : "🤖"} ${message.name}]`);
-    lines.push(message.mes);
-    if (message.is_user && message.extra?.inputFeedback) {
-      feedbackCount++;
-      lines.push(""); lines.push("  📝 피드백:");
-      message.extra.inputFeedback.feedback.split("\n").forEach(fl => lines.push("  " + fl));
-    }
-    lines.push(""); lines.push("────────────────────────────────────────"); lines.push("");
-  });
-  lines.push(`=== 총 ${messages.length}개 메시지 / 피드백 ${feedbackCount}개 ===`);
-  return { text: lines.join("\n"), feedbackCount };
-}
-
-// ── 채팅 + 번역 + 피드백 추출 ────────────────────────
-
-function extractPairedText(displayText) {
-  if (!displayText) return null;
-
-  const detailsBlocks = [...displayText.matchAll(/<details[\s\S]*?<\/details>/g)];
-
-  if (detailsBlocks.length > 0) {
-    const pairs = detailsBlocks.map(block => {
-      const html = block[0];
-      const origMatch = html.match(/class="original_text[^"]*"[^>]*>([\s\S]*?)<\/span>/);
-      const transMatch = html.match(/class="translated_text"[^>]*>([\s\S]*?)<\/span>/);
-      const orig = origMatch ? origMatch[1].trim() : "";
-      const trans = transMatch ? transMatch[1].trim() : "";
-      if (orig && trans) return orig + "\n" + trans;
-      if (trans) return trans;
-      if (orig) return orig;
-      return null;
-    }).filter(Boolean);
-
-    if (pairs.length > 0) return pairs.join("\n\n");
-  }
-
-  const stripped = displayText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  return stripped || null;
-}
-
-function buildChatWithTranslationAndFeedback(chatLabel, messages) {
-  const lines = ["=== 채팅 + 번역 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
-  let feedbackCount = 0;
-
-  messages.forEach(message => {
-    if (!message.name) return;
-
-    const isUser = message.is_user;
-    const role = isUser ? "👤 " + message.name : "🤖 " + message.name;
-    const displayText = message.extra?.display_text || null;
-    const paired = extractPairedText(displayText);
-    const feedback = isUser && message.extra?.inputFeedback ? message.extra.inputFeedback.feedback : null;
-
-    lines.push(`[${role}]`);
-
-    if (paired) {
-      lines.push(paired);
-    } else {
-      lines.push(message.mes);
-    }
-
-    if (feedback) {
-      feedbackCount++;
-      lines.push("");
-      lines.push("  📝 피드백:");
-      feedback.split("\n").forEach(fl => lines.push("  " + fl));
-    }
-
-    lines.push("");
-    lines.push("────────────────────────────────────────");
-    lines.push("");
-  });
-
-  lines.push(`=== 총 ${messages.length}개 메시지 / 피드백 ${feedbackCount}개 ===`);
-  return { text: lines.join("\n"), feedbackCount };
-}
-
-// ── 추출 버튼 핸들러 ─────────────────────────────────
-
-function onExportClick() {
-  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
-  const chatId = getCurrentChatId();
-  const result = buildFeedbackOnlyText(chatId, getContext().chat);
-  if (!result) { toastr.info("이 채팅에 저장된 피드백이 없습니다."); return; }
-  downloadTxt(result.text, "피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
-  toastr.success(result.count + "개 피드백 저장 완료!");
-}
-
 // ── UI 헬퍼 ──────────────────────────────────────────
 
 function drawer(content, folded = true) {
@@ -680,6 +590,7 @@ jQuery(async () => {
   eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdited);
   eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserMessageRendered);
   eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+  eventSource.on(event_types.CHAT_CHANGED, updateQuickButton);
 
   $(document).on("click", ".mes_feedback", function () {
     if (!extensionSettings.enabled) return;
@@ -691,4 +602,3 @@ jQuery(async () => {
     deleteMessage(Number($(this).closest(".mes").attr("mesid")));
   });
 });
-eventSource.on(event_types.CHAT_CHANGED, updateQuickButton); 
