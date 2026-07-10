@@ -1,4 +1,4 @@
-Import {
+import {
   extension_settings,
   getContext,
 } from "../../../extensions.js";
@@ -106,9 +106,7 @@ function createQuickButton() {
   $(`#${QUICK_BTN_ID}`).remove();
 
   const side = extension_settings[extensionName].quickButtonSide || "left";
-  // 실리태번 코어 버튼 클래스만 부여하고 인라인 스타일을 배제하여 테마와 연동되게 합니다.
   const $btn = $(`<div id="${QUICK_BTN_ID}" class="menu_button interactable"></div>`);
-  // ... 생략 ...
 
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
   const rightTargets = ["#rightSendForm", "#send_but_sheld", "#send_form"];
@@ -168,7 +166,134 @@ function updateQuickButtonState() {
   const enabled = extension_settings[extensionName].enabled;
   const $btn = $(`#${QUICK_BTN_ID}`);
   $btn.toggleClass("active", enabled).toggleClass("inactive", !enabled);
+  
+  // ON/OFF 상태에 따라 AB 텍스트 유연하게 변경
+  if (enabled) {
+    $btn.text("AB");
+  } else {
+    $btn.text("A̶B̶");
+  }
+  
   $btn.attr("title", enabled ? "인풋 피드백 ON — 클릭하면 끄기" : "인풋 피드백 OFF — 클릭하면 켜기");
+}
+
+// ── 피드백 뷰어 ──────────────────────────────────────
+
+function createFeedbackViewer() {
+  if ($('#st-feedback-viewer').length) {
+    $('#st-feedback-viewer').show();
+    loadFeedbackViewerContent();
+    return;
+  }
+
+  const html = `
+    <div id="st-feedback-viewer" style="
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:85vw; max-width:700px; height:75vh;
+      background:var(--SmartThemeBodyColor,#1a1a1a);
+      border:1px solid var(--SmartThemeBorderColor,#555);
+      border-radius:10px; z-index:99999;
+      display:flex; flex-direction:column;
+      box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    ">
+      <div style="
+        display:flex; justify-content:space-between; align-items:center;
+        padding:12px 16px; border-bottom:1px solid var(--SmartThemeBorderColor,#555);
+        flex-shrink:0;
+      ">
+        <span style="font-weight:bold;color:var(--SmartThemeBodyTextColor,#eee);font-size:14px;">
+          📋 피드백 모아보기
+        </span>
+        <button id="st-feedback-viewer-close" style="
+          background:none;border:none;
+          color:var(--SmartThemeBodyTextColor,#eee);
+          font-size:20px;cursor:pointer;
+        ">✕</button>
+      </div>
+      <div id="st-feedback-viewer-body" style="
+        flex:1; overflow-y:auto; padding:16px;
+        color:var(--SmartThemeBodyTextColor,#eee);
+        font-size:13px; line-height:1.7;
+      ">
+        <div id="st-feedback-viewer-content"></div>
+      </div>
+      <div style="
+        display:flex; gap:8px; padding:12px 16px;
+        border-top:1px solid var(--SmartThemeBorderColor,#555);
+        flex-shrink:0;
+      ">
+        <button id="st-feedback-viewer-export" style="
+          flex:1; padding:8px; border:none; border-radius:6px;
+          background:var(--SmartThemeQuoteColor,#555);
+          color:#fff; cursor:pointer; font-size:13px;
+        ">💾 txt로 저장</button>
+      </div>
+    </div>
+  `;
+
+  $('body').append(html);
+
+  $('#st-feedback-viewer-close').on('click', () => {
+    $('#st-feedback-viewer').remove();
+  });
+
+  $('#st-feedback-viewer-export').on('click', () => {
+    const chatId = getCurrentChatId();
+    if (!chatId) { toastr.info("No chat selected."); return; }
+    const result = buildFeedbackOnlyText(chatId, getContext().chat);
+    if (!result) { toastr.info("피드백이 없습니다."); return; }
+    downloadTxt(result.text, "피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+    toastr.success(result.count + "개 피드백 저장 완료!");
+  });
+
+  loadFeedbackViewerContent();
+}
+
+function loadFeedbackViewerContent() {
+  const $content = $('#st-feedback-viewer-content');
+  const chatId = getCurrentChatId();
+
+  if (!chatId) {
+    $content.html('<div style="opacity:0.6;text-align:center;padding:40px;">채팅방을 먼저 열어주세요.</div>');
+    return;
+  }
+
+  const messages = getContext().chat;
+  let count = 0;
+  let html = '';
+
+  messages.forEach((message, messageId) => {
+    if (!message.is_user || !message.extra?.inputFeedback) return;
+    count++;
+
+    const msg = message.extra.inputFeedback.message || message.mes;
+    const feedback = message.extra.inputFeedback.feedback;
+
+    html += `
+      <div style="
+        margin-bottom:20px; padding:14px;
+        background:var(--SmartThemeBlurTintColor,rgba(255,255,255,0.05));
+        border-radius:8px; border-left:3px solid var(--SmartThemeQuoteColor,#888);
+      ">
+        <div style="font-size:11px;opacity:0.5;margin-bottom:6px;">#${count} · 메시지 ${messageId}</div>
+        <div style="margin-bottom:8px;">
+          <span style="opacity:0.6;font-size:11px;">✏️ 내 메시지</span><br>
+          <span style="opacity:0.9;">${msg}</span>
+        </div>
+        <div>
+          <span style="opacity:0.6;font-size:11px;">💬 피드백</span><br>
+          <span style="opacity:0.85;white-space:pre-wrap;">${feedback}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  if (count === 0) {
+    $content.html('<div style="opacity:0.6;text-align:center;padding:40px;">이 채팅에 저장된 피드백이 없습니다.</div>');
+  } else {
+    $content.html(`<div style="opacity:0.5;font-size:12px;margin-bottom:16px;">총 ${count}개 피드백</div>` + html);
+  }
 }
 
 // ── Settings ──────────────────────────────────────────
@@ -310,14 +435,12 @@ function handleMessageEdited(messageId) {
 function handleUserMessageRendered(messageId) {
   if (!extensionSettings.enabled) return;
   
-  // 렌더링된 메시지가 유저(나)의 메시지인지 엄격하게 검사합니다.
   const message = getMessage(messageId);
   if (!message || !message.is_user) return;
 
   addFeedbackButton(messageId);
   if (extensionSettings.autoNew) getFeedback(messageId);
 }
-
 
 function handleChatChanged() {
   getContext().chat.forEach((message, messageId) => {
@@ -488,6 +611,7 @@ function downloadTxt(content, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ── 파일 이름 정제 ────────────────────────────────────
 function safeName(str) {
   return str.replace(/[\\/:*?"<>|]/g, "_").slice(0, 50);
 }
@@ -508,101 +632,6 @@ function buildFeedbackOnlyText(chatLabel, messages) {
   if (count === 0) return null;
   lines.push("=== 총 " + count + "개 피드백 ===");
   return { text: lines.join("\n"), count };
-}
-
-// ── 채팅 + 피드백 추출 ───────────────────────────────
-
-function buildChatWithFeedbackText(chatLabel, messages) {
-  const lines = ["=== 채팅 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
-  let feedbackCount = 0;
-  messages.forEach(message => {
-    if (!message.name) return;
-    lines.push(`[${message.is_user ? "👤" : "🤖"} ${message.name}]`);
-    lines.push(message.mes);
-    if (message.is_user && message.extra?.inputFeedback) {
-      feedbackCount++;
-      lines.push(""); lines.push("  📝 피드백:");
-      message.extra.inputFeedback.feedback.split("\n").forEach(fl => lines.push("  " + fl));
-    }
-    lines.push(""); lines.push("────────────────────────────────────────"); lines.push("");
-  });
-  lines.push(`=== 총 ${messages.length}개 메시지 / 피드백 ${feedbackCount}개 ===`);
-  return { text: lines.join("\n"), feedbackCount };
-}
-
-// ── 채팅 + 번역 + 피드백 추출 ────────────────────────
-
-function extractPairedText(displayText) {
-  if (!displayText) return null;
-
-  const detailsBlocks = [...displayText.matchAll(/<details[\s\S]*?<\/details>/g)];
-
-  if (detailsBlocks.length > 0) {
-    const pairs = detailsBlocks.map(block => {
-      const html = block[0];
-      const origMatch = html.match(/class="original_text[^"]*"[^>]*>([\s\S]*?)<\/span>/);
-      const transMatch = html.match(/class="translated_text"[^>]*>([\s\S]*?)<\/span>/);
-      const orig = origMatch ? origMatch[1].trim() : "";
-      const trans = transMatch ? transMatch[1].trim() : "";
-      if (orig && trans) return orig + "\n" + trans;
-      if (trans) return trans;
-      if (orig) return orig;
-      return null;
-    }).filter(Boolean);
-
-    if (pairs.length > 0) return pairs.join("\n\n");
-  }
-
-  const stripped = displayText.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  return stripped || null;
-}
-
-function buildChatWithTranslationAndFeedback(chatLabel, messages) {
-  const lines = ["=== 채팅 + 번역 + 피드백 ===", "채팅: " + chatLabel, "추출일시: " + new Date().toLocaleString(), "", "────────────────────────────────────────", ""];
-  let feedbackCount = 0;
-
-  messages.forEach(message => {
-    if (!message.name) return;
-
-    const isUser = message.is_user;
-    const role = isUser ? "👤 " + message.name : "🤖 " + message.name;
-    const displayText = message.extra?.display_text || null;
-    const paired = extractPairedText(displayText);
-    const feedback = isUser && message.extra?.inputFeedback ? message.extra.inputFeedback.feedback : null;
-
-    lines.push(`[${role}]`);
-
-    if (paired) {
-      lines.push(paired);
-    } else {
-      lines.push(message.mes);
-    }
-
-    if (feedback) {
-      feedbackCount++;
-      lines.push("");
-      lines.push("  📝 피드백:");
-      feedback.split("\n").forEach(fl => lines.push("  " + fl));
-    }
-
-    lines.push("");
-    lines.push("────────────────────────────────────────");
-    lines.push("");
-  });
-
-  lines.push(`=== 총 ${messages.length}개 메시지 / 피드백 ${feedbackCount}개 ===`);
-  return { text: lines.join("\n"), feedbackCount };
-}
-
-// ── 추출 버튼 핸들러 ─────────────────────────────────
-
-function onExportClick() {
-  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
-  const chatId = getCurrentChatId();
-  const result = buildFeedbackOnlyText(chatId, getContext().chat);
-  if (!result) { toastr.info("이 채팅에 저장된 피드백이 없습니다."); return; }
-  downloadTxt(result.text, "피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
-  toastr.success(result.count + "개 피드백 저장 완료!");
 }
 
 // ── UI 헬퍼 ──────────────────────────────────────────
@@ -677,9 +706,30 @@ jQuery(async () => {
 
   loadSettings();
 
+  // 안전하게 초기화 완료 시점에 확장 메뉴에 피드백 뷰어 버튼을 추가합니다.
+  if (!$('#st-feedback-viewer-menu-btn').length) {
+    const $menu = $('#extensionsMenu');
+    if ($menu.length) {
+      $menu.append(`
+        <div id="st-feedback-viewer-menu-btn" class="list-group-item interactable">
+          <div class="list-group-item-action">
+            <i class="fa-solid fa-spell-check"></i>
+          </div>
+          <div class="list-group-item-label">피드백 모아보기</div>
+        </div>
+      `);
+      
+      // 인라인 고장 유발 코드 지우고 안전하게 이벤트 바인딩 처리
+      $('#st-feedback-viewer-menu-btn').on('click', () => {
+        if (typeof createFeedbackViewer === 'function') createFeedbackViewer();
+      });
+    }
+  }
+
   eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdited);
   eventSource.on(event_types.USER_MESSAGE_RENDERED, handleUserMessageRendered);
   eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+  eventSource.on(event_types.CHAT_CHANGED, updateQuickButton);
 
   $(document).on("click", ".mes_feedback", function () {
     if (!extensionSettings.enabled) return;
@@ -691,4 +741,3 @@ jQuery(async () => {
     deleteMessage(Number($(this).closest(".mes").attr("mesid")));
   });
 });
-eventSource.on(event_types.CHAT_CHANGED, updateQuickButton); 
