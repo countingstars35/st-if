@@ -107,7 +107,7 @@ function createQuickButton() {
 
   const side = extension_settings[extensionName].quickButtonSide || "left";
   // 실리태번 코어 버튼 클래스만 부여하고 인라인 스타일을 배제하여 테마와 연동되게 합니다.
-  const $btn = $(`<div id="${QUICK_BTN_ID}" class="menu_button interactable"></div>`);
+  const $btn = $(`<div id="${QUICK_BTN_ID}" class="menu_button interactable">AB</div>`);
   // ... 생략 ...
 
   const leftTargets  = ["#leftSendForm", "#send_form .flex-container:first", "#send_form"];
