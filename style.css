@@ -75,6 +75,7 @@
 #input-feedback-quick-btn.inactive {
   color: var(--SmartThemeBodyTextColor, #aaa) !important;
   opacity: 0.4;
+  text-decoration: line-through;
 }
 
 /* fallback: fixed 방식 */
