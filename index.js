@@ -594,6 +594,22 @@ function buildChatWithTranslationAndFeedback(chatLabel, messages) {
   return { text: lines.join("\n"), feedbackCount };
 }
 
+function onExportChatClick() {
+  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
+  const chatId = getCurrentChatId();
+  const result = buildChatWithFeedbackText(chatId, getContext().chat);
+  downloadTxt(result.text, "채팅+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+  toastr.success("채팅 + 피드백 " + result.feedbackCount + "개 저장 완료!");
+}
+
+function onExportAllClick() {
+  if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
+  const chatId = getCurrentChatId();
+  const result = buildChatWithTranslationAndFeedback(chatId, getContext().chat);
+  downloadTxt(result.text, "채팅+번역+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+  toastr.success("채팅 + 번역 + 피드백 " + result.feedbackCount + "개 저장 완료!");
+}
+
 // ── 추출 버튼 핸들러 ─────────────────────────────────
 
 function onExportClick() {
@@ -674,7 +690,8 @@ jQuery(async () => {
   $("#input-feedback-custom-model").on("input", onCustomModelInput);
   $("#input-feedback-purge").on("click", onPurgeClick);
   $("#input-feedback-export").on("click", onExportClick);
-
+  $("#input-feedback-export-chat").on("click", onExportChatClick);
+  $("#input-feedback-export-all").on("click", onExportAllClick);
   loadSettings();
 
   eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdited);
