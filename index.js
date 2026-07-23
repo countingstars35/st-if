@@ -210,7 +210,7 @@ async function callViaSTProxy(prompt, provider, model) {
     model: model,
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    max_tokens: 1000,
+    max_tokens: 3000,
     stream: false,
     chat_completion_source: chat_completion_source,
   };
