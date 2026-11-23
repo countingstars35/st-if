@@ -606,7 +606,7 @@ function onExportAllClick() {
   if (!getCurrentChatId()) { toastr.info("No chat selected."); return; }
   const chatId = getCurrentChatId();
   const result = buildChatWithTranslationAndFeedback(chatId, getContext().chat);
-  downloadTxt(result.text, "채팅+번역+피드백_" + safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
+  downloadTxt(result.text, safeName(chatId) + "_" + new Date().toISOString().slice(0, 10) + ".txt");
   toastr.success("채팅 + 번역 + 피드백 " + result.feedbackCount + "개 저장 완료!");
 }
 
